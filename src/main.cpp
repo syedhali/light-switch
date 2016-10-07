@@ -11,7 +11,7 @@ using namespace light_switch::utils;
 
 // Instance Variables
 
-Bluetooth mBluetooth;
+Bluetooth mBluetooth = Bluetooth();
 
 /**
  * Current state of the button pin
@@ -38,6 +38,10 @@ uint8_t mLedState = LOW;
 // Application
 //
 
+void switchCharacteristicWrittenHandler( BLECentral &central, BLECharacteristic &characteristic ) {
+    mBluetooth.handleSwitchCharacteristicWritten( central, characteristic );
+}
+
 /**
  * Main initalizer method
  */
@@ -53,7 +57,10 @@ void setup() {
     //
     // Begin the bluetooth
     //
-    mBluetooth = Bluetooth();
+    mBluetooth.setValueChangedHandler( switchCharacteristicWrittenHandler, [&]( Value value ) {
+        mLedState = value == Value::OFF ? LOW : HIGH;
+        digitalWrite( LED_PIN, mLedState );
+    } );
     mBluetooth.begin();
 
     //
@@ -95,6 +102,7 @@ void loop() {
                 //
                 mLedState = mLedState == LOW ? HIGH : LOW;
                 digitalWrite( LED_PIN, mLedState );
+                mBluetooth.setValueWithState( mLedState );
 
                 //
                 // Log out new LED state

@@ -10,10 +10,14 @@ namespace light_switch {
 
 using namespace constants::bluetooth;
 
-class Bluetooth {
-    enum Value { OFF = 0,
-                 ON = 1 };
+enum class Value : char {
+    OFF = 0,
+    ON = 1
+};
 
+typedef void ( *ValueChangeHandler )( Value value );
+
+class Bluetooth {
 private:
     /**
      * The bluetooth peripheral instance
@@ -45,6 +49,11 @@ private:
      */
     BLEDescriptor mStateDescriptor = BLEDescriptor( state_descriptor::UUID, "State" );
 
+    /**
+     * The bluetooth value change handler
+     */
+    ValueChangeHandler mValueChangeHandler;
+
 public:
     Bluetooth() {
         mBLEPeripheral.setLocalName( "Light Switch" );
@@ -58,19 +67,45 @@ public:
         mBLEPeripheral.addAttribute( mStateDescriptor );
     }
 
+    ~Bluetooth() {
+        if ( mBLEPeripheral.connected() ) {
+            mBLEPeripheral.disconnect();
+        }
+    };
+
     void begin() {
-        Serial.println( "Bluetooth beginning meow" );
         mBLEPeripheral.begin();
-        Serial.println( "Bluetooth done beginning meow" );
+    }
+
+    void handleSwitchCharacteristicWritten( BLECentral &central, BLECharacteristic &characteristic ) {
+        if ( mValueChangeHandler ) {
+            char value = mSwitchCharacteristic.value();
+            mStateCharacteristic.setValue( value );
+            mValueChangeHandler( value == 0 ? Value::OFF : Value::ON );
+        }
+    }
+
+    BLECharacteristic getSwitchCharacteristic() {
+        return mSwitchCharacteristic;
     }
 
     void poll() {
         mBLEPeripheral.poll();
     }
 
+    void setValueChangedHandler( BLECharacteristicEventHandler characteristicHandler, ValueChangeHandler changeHandler ) {
+        mSwitchCharacteristic.setEventHandler( BLEWritten, characteristicHandler );
+        mValueChangeHandler = changeHandler;
+    }
+
     void setValue( Value value ) {
-        mStateCharacteristic.setValue( (char)value );
-        mSwitchCharacteristic.setValue( (char)value );
+        mStateCharacteristic.setValue( static_cast<char>( value ) );
+        mSwitchCharacteristic.setValue( static_cast<char>( value ) );
+    }
+
+    void setValueWithState( uint8_t state ) {
+        Value value = state == LOW ? Value::OFF : Value::ON;
+        setValue( value );
     }
 };
 }
