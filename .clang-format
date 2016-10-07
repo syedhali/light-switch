@@ -1,0 +1,15 @@
+Language: Cpp
+BasedOnStyle: Google
+AccessModifierOffset: -4
+AlignTrailingComments: true
+BreakBeforeBraces: Attach
+ColumnLimit: 0
+IndentWidth: 4
+KeepEmptyLinesAtTheStartOfBlocks: false
+ObjCSpaceAfterProperty: true
+ObjCSpaceBeforeProtocolList: true
+PointerBindsToType: false
+SpacesInParentheses: true
+SpacesBeforeTrailingComments: 1
+TabWidth: 8
+UseTab: Never
